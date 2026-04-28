@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nós Dois ♡</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#b5634a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Nós Dois">
+<style>
+  :root {
+    --cream: #fdf6ee;
+    --warm: #f5ebe0;
+    --clay: #c7956c;
+    --terracotta: #b5634a;
+    --dark: #2c2018;
+    --muted: #8a7060;
+    --green: #6a8c69;
+    --accent: #e8a87c;
+    --card: #fffaf5;
+    --shadow: 0 4px 24px rgba(44,32,24,0.10);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--dark); min-height: 100vh; }
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      radial-gradient(ellipse at 20% 10%, rgba(199,149,108,0.13) 0%, transparent 55%),
+      radial-gradient(ellipse at 80% 90%, rgba(181,99,74,0.10) 0%, transparent 50%),
+      url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23c7956c' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    pointer-events: none; z-index: 0;
+  }
+  .app-wrapper { position: relative; z-index: 1; max-width: 480px; margin: 0 auto; padding: 0 0 80px 0; }
+
+  /* Sync indicator */
+  .sync-bar {
+    display: flex; align-items: center; justify-content: center;
+    gap: 6px; padding: 6px 0; font-size: 11px; font-weight: 500;
+    transition: all 0.3s;
+  }
+  .sync-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--green); transition: background 0.3s;
+  }
+  .sync-bar.syncing .sync-dot { background: var(--clay); animation: pulse 0.8s infinite; }
+  .sync-bar.offline .sync-dot { background: #c0392b; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  header { padding: 8px 24px 20px; text-align: center; }
+  .heart-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, var(--terracotta), var(--clay));
+    color: white; font-size: 11px; font-weight: 500;
+    letter-spacing: 2px; text-transform: uppercase;
+    padding: 5px 14px; border-radius: 20px; margin-bottom: 10px;
+  }
+  header h1 { font-family: 'Playfair Display', serif; font-size: 2.2rem; font-weight: 700; color: var(--dark); line-height: 1.1; }
+  header h1 span { color: var(--terracotta); font-style: italic; }
+  .date-line { font-size: 13px; color: var(--muted); margin-top: 6px; font-weight: 300; }
+
+  .tabs {
+    display: flex; gap: 6px; padding: 0 20px; margin-bottom: 20px;
+    overflow-x: auto; scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab-btn {
+    flex-shrink: 0; background: none; border: 1.5px solid transparent;
+    border-radius: 22px; padding: 8px 18px;
+    font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500;
+    cursor: pointer; color: var(--muted); transition: all 0.2s;
+  }
+  .tab-btn.active { background: var(--dark); color: var(--cream); border-color: var(--dark); }
+  .tab-btn:not(.active):hover { border-color: var(--clay); color: var(--clay); }
+
+  .section { display: none; padding: 0 20px; animation: fadeIn 0.3s ease; }
+  .section.active { display: block; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+  .card {
+    background: var(--card); border-radius: 20px; padding: 20px;
+    box-shadow: var(--shadow); margin-bottom: 16px;
+    border: 1px solid rgba(199,149,108,0.12);
+  }
+  .card-title {
+    font-family: 'Playfair Display', serif; font-size: 1.1rem; font-weight: 700;
+    margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
+  }
+  .card-title .icon {
+    width: 30px; height: 30px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; flex-shrink: 0;
+  }
+  .icon-clay { background: rgba(199,149,108,0.18); }
+  .icon-green { background: rgba(106,140,105,0.15); }
+  .icon-terra { background: rgba(181,99,74,0.13); }
+
+  .input-row { display: flex; gap: 8px; margin-bottom: 14px; }
+  .input-row input, .input-row select {
+    flex: 1; background: var(--warm); border: 1.5px solid transparent;
+    border-radius: 12px; padding: 10px 14px;
+    font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--dark);
+    outline: none; transition: border-color 0.2s;
+  }
+  .input-row input:focus, .input-row select:focus { border-color: var(--clay); }
+  .input-row input::placeholder { color: var(--muted); }
+  .btn-add {
+    background: linear-gradient(135deg, var(--terracotta), var(--clay));
+    color: white; border: none; border-radius: 12px; padding: 10px 16px;
+    font-size: 18px; cursor: pointer; transition: transform 0.15s, opacity 0.15s; flex-shrink: 0;
+  }
+  .btn-add:hover { transform: scale(1.05); opacity: 0.9; }
+
+  .items-list { display: flex; flex-direction: column; gap: 8px; }
+  .item {
+    display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+    background: var(--warm); border-radius: 12px; transition: all 0.2s;
+    animation: slideIn 0.25s ease;
+  }
+  @keyframes slideIn { from{opacity:0;transform:translateX(-12px)} to{opacity:1;transform:translateX(0)} }
+  .item.done { opacity: 0.5; }
+  .item.done .item-text { text-decoration: line-through; }
+  .item-check {
+    width: 22px; height: 22px; border-radius: 8px; border: 2px solid var(--clay);
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; font-size: 12px; transition: all 0.2s; background: transparent;
+  }
+  .item.done .item-check { background: var(--green); border-color: var(--green); color: white; }
+  .item-text { flex: 1; font-size: 14px; font-weight: 400; color: var(--dark); }
+  .item-meta {
+    font-size: 11px; color: var(--muted);
+    background: rgba(199,149,108,0.12); padding: 2px 8px; border-radius: 8px; white-space: nowrap;
+  }
+  .item-delete {
+    background: none; border: none; cursor: pointer; color: var(--muted);
+    font-size: 16px; padding: 2px 4px; border-radius: 6px; transition: color 0.2s; opacity: 0.5;
+  }
+  .item-delete:hover { color: var(--terracotta); opacity: 1; }
+
+  .note-input {
+    width: 100%; background: var(--warm); border: 1.5px solid transparent;
+    border-radius: 12px; padding: 12px 14px;
+    font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--dark);
+    resize: none; outline: none; transition: border-color 0.2s;
+    min-height: 80px; margin-bottom: 8px; display: block;
+  }
+  .note-input:focus { border-color: var(--clay); }
+
+  .note-card {
+    background: var(--warm); border-radius: 14px; padding: 14px;
+    margin-bottom: 10px; position: relative; animation: slideIn 0.25s ease;
+  }
+  .note-card .note-who {
+    font-size: 11px; font-weight: 500; color: var(--terracotta);
+    margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .note-card .note-body { font-size: 14px; color: var(--dark); line-height: 1.5; }
+  .note-card .note-time { font-size: 11px; color: var(--muted); margin-top: 6px; }
+  .note-card .item-delete { position: absolute; top: 10px; right: 10px; }
+
+  .who-picker { display: flex; gap: 8px; margin-bottom: 12px; }
+  .who-btn {
+    flex: 1; padding: 8px; border-radius: 12px; border: 2px solid transparent;
+    background: var(--warm); font-family: 'DM Sans', sans-serif;
+    font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.2s; color: var(--muted);
+  }
+  .who-btn.selected-pedro { background: rgba(181,99,74,0.13); border-color: var(--terracotta); color: var(--terracotta); }
+  .who-btn.selected-esposa { background: rgba(106,140,105,0.15); border-color: var(--green); color: var(--green); }
+
+  .progress-wrap { margin-top: 10px; }
+  .progress-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-bottom: 5px; }
+  .progress-bar { height: 6px; background: var(--warm); border-radius: 6px; overflow: hidden; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--green), var(--clay)); border-radius: 6px; transition: width 0.4s ease; }
+
+  .empty { text-align: center; padding: 24px 0 10px; color: var(--muted); font-size: 13px; font-style: italic; }
+
+  .reminder-pill {
+    display: flex; align-items: center; gap: 8px;
+    background: rgba(181,99,74,0.08); border: 1.5px solid rgba(181,99,74,0.2);
+    border-radius: 14px; padding: 10px 14px; margin-bottom: 8px; animation: slideIn 0.25s ease;
+  }
+  .reminder-pill .r-icon { font-size: 18px; flex-shrink: 0; }
+  .reminder-pill .r-text { flex: 1; }
+  .reminder-pill .r-title { font-size: 14px; font-weight: 500; }
+  .reminder-pill .r-time { font-size: 12px; color: var(--muted); }
+  .r-who { font-size: 11px; padding: 2px 8px; border-radius: 8px; font-weight: 500; }
+  .r-who.pedro { background: rgba(181,99,74,0.15); color: var(--terracotta); }
+  .r-who.esposa { background: rgba(106,140,105,0.15); color: var(--green); }
+  .r-who.ambos { background: rgba(199,149,108,0.15); color: var(--clay); }
+
+  .config-item {
+    display: flex; align-items: center; padding: 14px 0;
+    border-bottom: 1px solid rgba(199,149,108,0.10); gap: 12px;
+  }
+  .config-item:last-child { border-bottom: none; }
+  .config-label { flex: 1; font-size: 14px; }
+  .config-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .config-input {
+    background: var(--warm); border: 1.5px solid transparent; border-radius: 10px;
+    padding: 7px 12px; font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--dark);
+    outline: none; width: 130px; text-align: right; transition: border-color 0.2s;
+  }
+  .config-input:focus { border-color: var(--clay); }
+
+  /* Loading overlay */
+  #loadingOverlay {
+    position: fixed; inset: 0; background: var(--cream);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 999; gap: 16px;
+  }
+  #loadingOverlay h2 { font-family: 'Playfair Display', serif; font-size: 1.8rem; color: var(--dark); }
+  #loadingOverlay p { color: var(--muted); font-size: 14px; }
+  .spinner {
+    width: 36px; height: 36px; border: 3px solid rgba(199,149,108,0.2);
+    border-top-color: var(--clay); border-radius: 50%; animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div id="loadingOverlay">
+  <div class="spinner"></div>
+  <h2>Nós Dois ♡</h2>
+  <p>Conectando...</p>
+</div>
+
+<div class="app-wrapper">
+  <div class="sync-bar" id="syncBar">
+    <div class="sync-dot"></div>
+    <span id="syncLabel">Sincronizado</span>
+  </div>
+
+  <header>
+    <div class="heart-badge">♡ só nós dois</div>
+    <h1>Nós <span>Dois</span></h1>
+    <div class="date-line" id="dateDisplay"></div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="showSection('tarefas', this)">✓ Tarefas</button>
+    <button class="tab-btn" onclick="showSection('compras', this)">🛒 Compras</button>
+    <button class="tab-btn" onclick="showSection('lembretes', this)">🔔 Lembretes</button>
+    <button class="tab-btn" onclick="showSection('recados', this)">💬 Recados</button>
+    <button class="tab-btn" onclick="showSection('config', this)">⚙ Nomes</button>
+  </div>
+
+  <!-- TAREFAS -->
+  <section class="section active" id="tarefas">
+    <div class="card">
+      <div class="card-title"><div class="icon icon-clay">✓</div>Tarefas da Casa</div>
+      <div class="input-row">
+        <input type="text" id="tarefaInput" placeholder="Nova tarefa..." onkeydown="if(event.key==='Enter') addTarefa()">
+        <select id="tarefaWho" style="max-width:110px;">
+          <option value="ambos">Os dois</option>
+          <option value="pedro" id="opt-pedro-t">Pedro</option>
+          <option value="esposa" id="opt-esposa-t">Esposa</option>
+        </select>
+        <button class="btn-add" onclick="addTarefa()">+</button>
+      </div>
+      <div class="progress-wrap" id="tarefaProgress" style="display:none">
+        <div class="progress-label"><span>Progresso</span><span id="tarefaProgressLabel">0/0</span></div>
+        <div class="progress-bar"><div class="progress-fill" id="tarefaProgressFill" style="width:0%"></div></div>
+      </div>
+      <div class="items-list" id="tarefaList"></div>
+      <div class="empty" id="tarefaEmpty">Nenhuma tarefa ainda ✨</div>
+    </div>
+  </section>
+
+  <!-- COMPRAS -->
+  <section class="section" id="compras">
+    <div class="card">
+      <div class="card-title"><div class="icon icon-green">🛒</div>Lista de Compras</div>
+      <div class="input-row">
+        <input type="text" id="compraInput" placeholder="Adicionar item..." onkeydown="if(event.key==='Enter') addCompra()">
+        <input type="text" id="compraQtd" placeholder="Qtd" style="max-width:60px;">
+        <button class="btn-add" onclick="addCompra()">+</button>
+      </div>
+      <div class="progress-wrap" id="compraProgress" style="display:none">
+        <div class="progress-label"><span>Itens marcados</span><span id="compraProgressLabel">0/0</span></div>
+        <div class="progress-bar"><div class="progress-fill" id="compraProgressFill" style="width:0%"></div></div>
+      </div>
+      <div class="items-list" id="compraList"></div>
+      <div class="empty" id="compraEmpty">Lista vazia — hora de ir às compras! 🍃</div>
+    </div>
+  </section>
+
+  <!-- LEMBRETES -->
+  <section class="section" id="lembretes">
+    <div class="card">
+      <div class="card-title"><div class="icon icon-terra">🔔</div>Lembretes</div>
+      <div class="input-row">
+        <input type="text" id="lembreteInput" placeholder="Lembrete..." onkeydown="if(event.key==='Enter') addLembrete()">
+        <input type="datetime-local" id="lembreteData" style="max-width:160px; font-size:12px;">
+      </div>
+      <div class="input-row" style="margin-top:-6px;">
+        <select id="lembreteWho">
+          <option value="ambos">Os dois</option>
+          <option value="pedro" id="opt-pedro-l">Pedro</option>
+          <option value="esposa" id="opt-esposa-l">Esposa</option>
+        </select>
+        <button class="btn-add" onclick="addLembrete()" style="flex:0">+</button>
+      </div>
+      <div id="lembreteList"></div>
+      <div class="empty" id="lembreteEmpty">Sem lembretes por enquanto 🌿</div>
+    </div>
+  </section>
+
+  <!-- RECADOS -->
+  <section class="section" id="recados">
+    <div class="card">
+      <div class="card-title"><div class="icon icon-clay">💬</div>Recados</div>
+      <div class="who-picker">
+        <button class="who-btn selected-pedro" id="whoBtn-pedro" onclick="selectWho('pedro')">De: <b id="name-pedro-btn">Pedro</b></button>
+        <button class="who-btn" id="whoBtn-esposa" onclick="selectWho('esposa')">De: <b id="name-esposa-btn">Esposa</b></button>
+      </div>
+      <textarea class="note-input" id="recadoInput" placeholder="Escreva um recado..." rows="3"></textarea>
+      <div class="input-row">
+        <button class="btn-add" onclick="addRecado()" style="flex:1;font-size:14px;font-weight:500;font-family:'DM Sans',sans-serif;border-radius:12px;">Enviar recado</button>
+      </div>
+      <div id="recadoList"></div>
+      <div class="empty" id="recadoEmpty">Nenhum recado ainda 💌</div>
+    </div>
+  </section>
+
+  <!-- CONFIG -->
+  <section class="section" id="config">
+    <div class="card">
+      <div class="card-title"><div class="icon icon-clay">⚙</div>Personalizar Nomes</div>
+      <div class="config-item">
+        <div><div class="config-label">Seu nome</div><div class="config-sub">Aparece nos recados e tarefas</div></div>
+        <input type="text" class="config-input" id="namePedro" value="Pedro" oninput="saveNames()">
+      </div>
+      <div class="config-item">
+        <div><div class="config-label">Nome dela</div><div class="config-sub">Aparece nos recados e tarefas</div></div>
+        <input type="text" class="config-input" id="nameEsposa" value="Esposa" oninput="saveNames()">
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><div class="icon icon-green">🔄</div>Sincronização</div>
+      <p style="font-size:13px;color:var(--muted);line-height:1.8;">
+        Os dados são sincronizados em tempo real pelo <b style="color:var(--dark)">Firebase</b>.<br>
+        Qualquer alteração feita por um aparece no outro em segundos.<br><br>
+        Salve esta página nos dois celulares:<br>
+        <b style="color:var(--dark)">Chrome → Menu → "Adicionar à tela inicial"</b>
+      </p>
+    </div>
+  </section>
+</div>
+
+<!-- Firebase SDK -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, push, remove, onValue, update }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyB6xQZehXKtnyf_pPjmftzK_u2HLrMOQMc",
+  authDomain: "nos-dois-4abe3.firebaseapp.com",
+  databaseURL: "https://nos-dois-4abe3-default-rtdb.firebaseio.com",
+  projectId: "nos-dois-4abe3",
+  storageBucket: "nos-dois-4abe3.firebasestorage.app",
+  messagingSenderId: "236172106933",
+  appId: "1:236172106933:web:203bdcbbd037736f6f32fc"
+};
+
+const app = initializeApp(firebaseConfig);
+const db  = getDatabase(app);
+
+// ---- STATE ----
+let names = { pedro: 'Pedro', esposa: 'Esposa' };
+let recadoWho = 'pedro';
+let notifiedLembretes = new Set();
+
+// ---- SYNC STATUS ----
+function setSyncing() {
+  const bar = document.getElementById('syncBar');
+  bar.className = 'sync-bar syncing';
+  document.getElementById('syncLabel').textContent = 'Sincronizando...';
+}
+function setSynced() {
+  const bar = document.getElementById('syncBar');
+  bar.className = 'sync-bar';
+  document.getElementById('syncLabel').textContent = 'Sincronizado ✓';
+}
+function setOffline() {
+  const bar = document.getElementById('syncBar');
+  bar.className = 'sync-bar offline';
+  document.getElementById('syncLabel').textContent = 'Sem conexão';
+}
+
+// ---- HELPERS ----
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function getName(who) {
+  if (who === 'pedro') return names.pedro;
+  if (who === 'esposa') return names.esposa;
+  return 'Os dois';
+}
+function showSection(id, btn) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (btn) btn.classList.add('active');
+}
+window.showSection = showSection;
+
+function updateDate() {
+  const d = new Date();
+  document.getElementById('dateDisplay').textContent =
+    d.toLocaleDateString('pt-BR', { weekday:'long', day:'numeric', month:'long' });
+}
+updateDate();
+
+// ---- NAMES ----
+onValue(ref(db, 'names'), snap => {
+  const data = snap.val();
+  if (data) {
+    names = data;
+    document.getElementById('namePedro').value = names.pedro || 'Pedro';
+    document.getElementById('nameEsposa').value = names.esposa || 'Esposa';
+    applyNames();
+  }
+});
+
+function applyNames() {
+  document.getElementById('name-pedro-btn').textContent = names.pedro;
+  document.getElementById('name-esposa-btn').textContent = names.esposa;
+  ['opt-pedro-t','opt-pedro-l'].forEach(id => { const el=document.getElementById(id); if(el) el.textContent=names.pedro; });
+  ['opt-esposa-t','opt-esposa-l'].forEach(id => { const el=document.getElementById(id); if(el) el.textContent=names.esposa; });
+}
+
+window.saveNames = function() {
+  const p = document.getElementById('namePedro').value || 'Pedro';
+  const e = document.getElementById('nameEsposa').value || 'Esposa';
+  names = { pedro: p, esposa: e };
+  applyNames();
+  setSyncing();
+  set(ref(db, 'names'), names).then(setSynced).catch(setOffline);
+};
+
+// ---- TAREFAS ----
+onValue(ref(db, 'tarefas'), snap => {
+  const data = snap.val() || {};
+  renderTarefas(data);
+  document.getElementById('loadingOverlay').style.display = 'none';
+});
+
+function renderTarefas(data) {
+  const list = document.getElementById('tarefaList');
+  const empty = document.getElementById('tarefaEmpty');
+  const prog = document.getElementById('tarefaProgress');
+  list.innerHTML = '';
+  const items = Object.entries(data).map(([k,v]) => ({...v, key:k}));
+  if (!items.length) { empty.style.display='block'; prog.style.display='none'; return; }
+  empty.style.display = 'none'; prog.style.display = 'block';
+  const done = items.filter(x => x.done).length;
+  document.getElementById('tarefaProgressLabel').textContent = `${done}/${items.length}`;
+  document.getElementById('tarefaProgressFill').style.width = `${(done/items.length)*100}%`;
+  items.sort((a,b) => a.createdAt - b.createdAt).forEach(t => {
+    const div = document.createElement('div');
+    div.className = 'item' + (t.done ? ' done' : '');
+    div.innerHTML = `
+      <div class="item-check" onclick="toggleTarefa('${t.key}',${!t.done})">${t.done?'✓':''}</div>
+      <span class="item-text">${escHtml(t.text)}</span>
+      <span class="item-meta">${escHtml(getName(t.who))}</span>
+      <button class="item-delete" onclick="deleteTarefa('${t.key}')">×</button>`;
+    list.appendChild(div);
+  });
+}
+window.addTarefa = function() {
+  const txt = document.getElementById('tarefaInput').value.trim();
+  if (!txt) return;
+  const who = document.getElementById('tarefaWho').value;
+  setSyncing();
+  push(ref(db, 'tarefas'), { text: txt, who, done: false, createdAt: Date.now() }).then(setSynced).catch(setOffline);
+  document.getElementById('tarefaInput').value = '';
+};
+window.toggleTarefa = function(key, val) {
+  setSyncing();
+  update(ref(db, `tarefas/${key}`), { done: val }).then(setSynced).catch(setOffline);
+};
+window.deleteTarefa = function(key) {
+  setSyncing();
+  remove(ref(db, `tarefas/${key}`)).then(setSynced).catch(setOffline);
+};
+
+// ---- COMPRAS ----
+onValue(ref(db, 'compras'), snap => {
+  renderCompras(snap.val() || {});
+});
+function renderCompras(data) {
+  const list = document.getElementById('compraList');
+  const empty = document.getElementById('compraEmpty');
+  const prog = document.getElementById('compraProgress');
+  list.innerHTML = '';
+  const items = Object.entries(data).map(([k,v]) => ({...v, key:k}));
+  if (!items.length) { empty.style.display='block'; prog.style.display='none'; return; }
+  empty.style.display='none'; prog.style.display='block';
+  const done = items.filter(x=>x.done).length;
+  document.getElementById('compraProgressLabel').textContent = `${done}/${items.length}`;
+  document.getElementById('compraProgressFill').style.width = `${(done/items.length)*100}%`;
+  items.sort((a,b)=>a.createdAt-b.createdAt).forEach(c => {
+    const div = document.createElement('div');
+    div.className = 'item' + (c.done?' done':'');
+    div.innerHTML = `
+      <div class="item-check" onclick="toggleCompra('${c.key}',${!c.done})">${c.done?'✓':''}</div>
+      <span class="item-text">${escHtml(c.text)}</span>
+      ${c.qtd?`<span class="item-meta">${escHtml(c.qtd)}</span>`:''}
+      <button class="item-delete" onclick="deleteCompra('${c.key}')">×</button>`;
+    list.appendChild(div);
+  });
+}
+window.addCompra = function() {
+  const txt = document.getElementById('compraInput').value.trim();
+  if (!txt) return;
+  const qtd = document.getElementById('compraQtd').value.trim();
+  setSyncing();
+  push(ref(db,'compras'), { text:txt, qtd:qtd||'', done:false, createdAt:Date.now() }).then(setSynced).catch(setOffline);
+  document.getElementById('compraInput').value = '';
+  document.getElementById('compraQtd').value = '';
+};
+window.toggleCompra = function(key, val) {
+  setSyncing();
+  update(ref(db,`compras/${key}`), { done:val }).then(setSynced).catch(setOffline);
+};
+window.deleteCompra = function(key) {
+  setSyncing();
+  remove(ref(db,`compras/${key}`)).then(setSynced).catch(setOffline);
+};
+
+// ---- LEMBRETES ----
+onValue(ref(db,'lembretes'), snap => {
+  renderLembretes(snap.val()||{});
+  checkLembretes(snap.val()||{});
+});
+function renderLembretes(data) {
+  const list = document.getElementById('lembreteList');
+  const empty = document.getElementById('lembreteEmpty');
+  list.innerHTML = '';
+  const items = Object.entries(data).map(([k,v])=>({...v,key:k}));
+  if (!items.length) { empty.style.display='block'; return; }
+  empty.style.display='none';
+  items.sort((a,b)=>(a.data||'').localeCompare(b.data||'')).forEach(l => {
+    const div = document.createElement('div');
+    div.className = 'reminder-pill';
+    let timeStr = '';
+    if (l.data) {
+      const d = new Date(l.data);
+      timeStr = d.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+    }
+    div.innerHTML = `
+      <div class="r-icon">🔔</div>
+      <div class="r-text">
+        <div class="r-title">${escHtml(l.text)}</div>
+        ${timeStr?`<div class="r-time">${timeStr}</div>`:''}
+      </div>
+      <span class="r-who ${l.who}">${escHtml(getName(l.who))}</span>
+      <button class="item-delete" onclick="deleteLembrete('${l.key}')">×</button>`;
+    list.appendChild(div);
+  });
+}
+function checkLembretes(data) {
+  const now = new Date();
+  Object.entries(data).forEach(([k,l]) => {
+    if (l.data && !notifiedLembretes.has(k)) {
+      const d = new Date(l.data);
+      if (now >= d) {
+        notifiedLembretes.add(k);
+        if (Notification.permission==='granted') {
+          new Notification('Nós Dois ♡', { body: l.text });
+        }
+      }
+    }
+  });
+}
+window.addLembrete = function() {
+  const txt = document.getElementById('lembreteInput').value.trim();
+  if (!txt) return;
+  const data = document.getElementById('lembreteData').value;
+  const who = document.getElementById('lembreteWho').value;
+  setSyncing();
+  push(ref(db,'lembretes'), { text:txt, data:data||'', who, createdAt:Date.now() }).then(setSynced).catch(setOffline);
+  document.getElementById('lembreteInput').value='';
+  document.getElementById('lembreteData').value='';
+};
+window.deleteLembrete = function(key) {
+  setSyncing();
+  remove(ref(db,`lembretes/${key}`)).then(setSynced).catch(setOffline);
+};
+
+// Notification permission
+if ('Notification' in window && Notification.permission==='default') {
+  Notification.requestPermission();
+}
+setInterval(() => {
+  const listEl = document.getElementById('lembreteList');
+  if (listEl) {
+    import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js").then(({onValue,ref:r})=>{});
+  }
+}, 60000);
+
+// ---- RECADOS ----
+onValue(ref(db,'recados'), snap => {
+  renderRecados(snap.val()||{});
+});
+function renderRecados(data) {
+  const list = document.getElementById('recadoList');
+  const empty = document.getElementById('recadoEmpty');
+  list.innerHTML='';
+  const items = Object.entries(data).map(([k,v])=>({...v,key:k}));
+  if (!items.length) { empty.style.display='block'; return; }
+  empty.style.display='none';
+  items.sort((a,b)=>b.createdAt-a.createdAt).forEach(r => {
+    const div = document.createElement('div');
+    div.className='note-card';
+    div.innerHTML=`
+      <div class="note-who">${escHtml(getName(r.who))}</div>
+      <div class="note-body">${escHtml(r.text)}</div>
+      <div class="note-time">${escHtml(r.time||'')}</div>
+      <button class="item-delete" onclick="deleteRecado('${r.key}')">×</button>`;
+    list.appendChild(div);
+  });
+}
+window.addRecado = function() {
+  const txt = document.getElementById('recadoInput').value.trim();
+  if (!txt) return;
+  const now = new Date();
+  const timeStr = now.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+  setSyncing();
+  push(ref(db,'recados'), { text:txt, who:recadoWho, time:timeStr, createdAt:Date.now() }).then(setSynced).catch(setOffline);
+  document.getElementById('recadoInput').value='';
+};
+window.deleteRecado = function(key) {
+  setSyncing();
+  remove(ref(db,`recados/${key}`)).then(setSynced).catch(setOffline);
+};
+
+window.selectWho = function(who) {
+  recadoWho = who;
+  document.querySelectorAll('.who-btn').forEach(b => b.classList.remove('selected-pedro','selected-esposa'));
+  document.getElementById('whoBtn-'+who).classList.add('selected-'+who);
+};
+
+</script>
+
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./service-worker.js')
+        .then(() => console.log('Service Worker registrado ✓'))
+        .catch(err => console.log('SW erro:', err));
+    });
+  }
+</script>
+</body>
+</html>
