@@ -218,6 +218,65 @@
     border-top-color: var(--clay); border-radius: 50%; animation: spin 0.8s linear infinite;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ==========================================
+   ESTILO DO CALENDÁRIO (ESTILO CUCAFLOW)
+   ========================================== */
+.calendar-container {
+    background: #FFFBF7; 
+    border-radius: 0 0 24px 24px; 
+    padding: 16px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05); 
+    margin-bottom: 20px;
+}
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: 'Playfair Display', serif;
+    color: #E25A38; 
+    margin-bottom: 12px;
+}
+.calendar-header button {
+    background: none;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+    color: #E25A38;
+}
+.calendar-weekdays {
+    display: grid !important;
+    grid-template-columns: repeat(7, 1fr) !important; 
+    text-align: center;
+    font-size: 11px;
+    font-family: 'DM Sans', sans-serif;
+    color: #8C7A6B;
+    margin-bottom: 8px;
+    text-transform: lowercase;
+}
+.calendar-days {
+    display: grid !important;
+    grid-template-columns: repeat(7, 1fr) !important; 
+    text-align: center;
+    gap: 8px;
+}
+.calendar-day {
+    padding: 8px 0;
+    font-size: 14px;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    border-radius: 50%; 
+    transition: all 0.2s;
+    display: inline-block;
+}
+.calendar-day.other-month {
+    color: #D1C5BC; 
+}
+.calendar-day.selected {
+    background: linear-gradient(135deg, #E25A38, #ED8A63); 
+    color: white !important;
+    font-weight: bold;
+}
 </style>
 </head>
 <body>
@@ -250,23 +309,42 @@
 
   <!-- TAREFAS -->
   <section class="section active" id="tarefas">
+    
+    <div class="calendar-container">
+      <div class="calendar-header">
+        <button onclick="mudarMes(-1)">◀</button>
+        <h3 id="calendar-month-year">Janeiro 2026</h3>
+        <button onclick="mudarMes(1)">▶</button>
+      </div>
+      <div class="calendar-weekdays">
+        <div>dom.</div><div>seg.</div><div>ter.</div><div>qua.</div><div>qui.</div><div>sex.</div><div>sáb.</div>
+      </div>
+      <div class="calendar-days" id="calendar-days-grid">
+        </div>
+    </div>
+
     <div class="card">
-      <div class="card-title"><div class="icon icon-clay">✓</div>Tarefas da Casa</div>
+      <div class="card-title">
+        <div class="icon icon-clay">✓</div>
+        <span id="selected-date-label">Tarefas de Hoje</span>
+      </div>
+      
       <div class="input-row">
-        <input type="text" id="tarefaInput" placeholder="Nova tarefa..." onkeydown="if(event.key==='Enter') addTarefa()">
+        <input type="text" id="tarefaInput" placeholder="Nova tarefa para este dia..." onkeydown="if(event.key==='Enter') addTarefa()">
         <select id="tarefaWho" style="max-width:110px;">
           <option value="ambos">Os dois</option>
           <option value="pedro" id="opt-pedro-t">Pedro</option>
-          <option value="esposa" id="opt-esposa-t">Esposa</option>
-        </select>
+          <option value="esposa" id="opt-esposa-t">Nicole</option> </select>
         <button class="btn-add" onclick="addTarefa()">+</button>
       </div>
+      
       <div class="progress-wrap" id="tarefaProgress" style="display:none">
         <div class="progress-label"><span>Progresso</span><span id="tarefaProgressLabel">0/0</span></div>
         <div class="progress-bar"><div class="progress-fill" id="tarefaProgressFill" style="width:0%"></div></div>
       </div>
+      
       <div class="items-list" id="tarefaList"></div>
-      <div class="empty" id="tarefaEmpty">Nenhuma tarefa ainda ✨</div>
+      <div class="empty" id="tarefaEmpty">Nenhuma tarefa para este dia ainda ✨</div>
     </div>
   </section>
 
@@ -645,6 +723,93 @@ window.selectWho = function(who) {
   document.querySelectorAll('.who-btn').forEach(b => b.classList.remove('selected-pedro','selected-esposa'));
   document.getElementById('whoBtn-'+who).classList.add('selected-'+who);
 };
+
+// ==========================================
+// LÓGICA DO CALENDÁRIO (ESTILO CUCAFLOW)
+// ==========================================
+let dataSelecionada = new Date(); // Guarda o dia que o usuário clicou (começa em hoje)
+let mesAtualExibido = dataSelecionada.getMonth();
+let anoAtualExibido = dataSelecionada.getFullYear();
+
+const nomesMeses = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+
+function renderizarCalendario() {
+    const grid = document.getElementById("calendar-days-grid");
+    const titulo = document.getElementById("calendar-month-year");
+    
+    if (!grid || !titulo) return; // Segurança para o código não quebrar se as tags não existirem
+    
+    grid.innerHTML = ""; // Limpa o calendário antigo para desenhar o novo
+    titulo.innerText = `${nomesMeses[mesAtualExibido]} ${anoAtualExibido}`;
+    
+    // Descobre o dia da semana em que o mês começa e o total de dias do mês
+    const primeiroDiaIndex = new Date(anoAtualExibido, mesAtualExibido, 1).getDay();
+    const totalDiasMes = new Date(anoAtualExibido, mesAtualExibido + 1, 0).getDate();
+    const totalDiasMesAnterior = new Date(anoAtualExibido, mesAtualExibido, 0).getDate();
+    
+    // 1. Desenha os dias do mês anterior que aparecem apagados no início
+    for (let i = primeiroDiaIndex; i > 0; i--) {
+        const div = document.createElement("div");
+        div.className = "calendar-day other-month";
+        div.innerText = totalDiasMesAnterior - i + 1;
+        grid.appendChild(div);
+    }
+    
+    // 2. Desenha os dias do mês atual
+    for (let dia = 1; dia <= totalDiasMes; dia++) {
+        const div = document.createElement("div");
+        div.className = "calendar-day";
+        div.innerText = dia;
+        
+        // Se for o dia que está selecionado, ganha a cor Terracotta/Clay
+        if (dia === dataSelecionada.getDate() && mesAtualExibido === dataSelecionada.getMonth() && anoAtualExibido === dataSelecionada.getFullYear()) {
+            div.classList.add("selected");
+        }
+        
+        // Quando clica no dia, chama a função para selecionar
+        div.onclick = () => selecionarData(dia);
+        grid.appendChild(div);
+    }
+}
+
+function mudarMes(direcao) {
+    mesAtualExibido += direcao;
+    if (mesAtualExibido > 11) {
+        mesAtualExibido = 0;
+        anoAtualExibido++;
+    } else if (mesAtualExibido < 0) {
+        mesAtualExibido = 11;
+        anoAtualExibido--;
+    }
+    renderizarCalendario();
+}
+
+function selecionarData(dia) {
+    dataSelecionada = new Date(anoAtualExibido, mesAtualExibido, dia);
+    
+    const hoje = new Date();
+    const label = document.getElementById("selected-date-label");
+    
+    // Muda o título embaixo do calendário conforme o dia clicado
+    if (dataSelecionada.toDateString() === hoje.toDateString()) {
+        label.innerText = "Tarefas de Hoje";
+    } else {
+        const dataFormatada = dataSelecionada.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long' });
+        label.innerText = `Tarefas de ${dataFormatada}`;
+    }
+    
+    renderizarCalendario(); // Recarrega o calendário para mudar a bolinha de dia selecionado
+    
+    // Avisa a função do Firebase para atualizar a lista (vamos ajustar isso a seguir)
+    if (typeof mostrarTarefas === 'function') {
+        mostrarTarefas(); 
+    }
+}
+
+// Quando a página terminar de carregar, desenha o calendário pela primeira vez
+document.addEventListener("DOMContentLoaded", () => {
+    renderizarCalendario();
+});
 
 </script>
 
