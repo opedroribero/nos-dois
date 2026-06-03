@@ -277,6 +277,76 @@
     color: white !important;
     font-weight: bold;
 }
+/* Alinhamento do carimbo de data */
+.task-header-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+/* Container para alinhar o dia do calendário com os pontos abaixo */
+.calendar-day-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    cursor: pointer;
+}
+
+/* Configuração dos pontinhos indicadores */
+.calendar-dots {
+    display: flex;
+    gap: 2px;
+    justify-content: center;
+    height: 6px;
+    margin-top: 2px;
+}
+
+.dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+/* Cores específicas dos pontinhos */
+.dot.pedro { background-color: #07406e; }   /* Azul */
+.dot.nicole { background-color: #fe5d93; }  /* Rosa */
+.dot.os-dois { background-color: #FFEB3B; } /* Amarelo */
+
+/* CORREÇÕES EXCLUSIVAS DE LINHA: */
+/* Alinhamento perfeito do carimbo de data */
+.task-header-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+/* Wrapper para empilhar o número do dia e as bolinhas de forma centralizada */
+.calendar-day-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    width: 100%;
+}
+/* Container dos pontinhos indicadores */
+.calendar-dots {
+    display: flex;
+    gap: 3px;
+    justify-content: center;
+    height: 6px;
+    margin-top: 2px;
+}
+.dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    display: inline-block;
+}
+</style>
 </style>
 </head>
 <body>
@@ -727,27 +797,38 @@ window.selectWho = function(who) {
 // ==========================================
 // LÓGICA DO CALENDÁRIO (ESTILO CUCAFLOW)
 // ==========================================
-let dataSelecionada = new Date(); // Guarda o dia que o usuário clicou (começa em hoje)
+// ==========================================
+// LÓGICA DO CALENDÁRIO COM CONEXÃO FIREBASE
+// ==========================================
+let dataSelecionada = new Date(); 
 let mesAtualExibido = dataSelecionada.getMonth();
 let anoAtualExibido = dataSelecionada.getFullYear();
+let todasAsTarefasDoBanco = {}; // Cache local para monitorar as bolinhas
 
 const nomesMeses = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+
+// Converte um objeto Date para string no formato "AAAA-MM-DD" seguro para banco de dados
+function obterStringData(date) {
+    const ano = date.getFullYear();
+    const mes = String(date.getMonth() + 1).padStart(2, '0');
+    const dia = String(date.getDate()).padStart(2, '0');
+    return `${ano}-${mes}-${dia}`;
+}
 
 function renderizarCalendario() {
     const grid = document.getElementById("calendar-days-grid");
     const titulo = document.getElementById("calendar-month-year");
     
-    if (!grid || !titulo) return; // Segurança para o código não quebrar se as tags não existirem
+    if (!grid || !titulo) return;
     
-    grid.innerHTML = ""; // Limpa o calendário antigo para desenhar o novo
+    grid.innerHTML = ""; 
     titulo.innerText = `${nomesMeses[mesAtualExibido]} ${anoAtualExibido}`;
     
-    // Descobre o dia da semana em que o mês começa e o total de dias do mês
     const primeiroDiaIndex = new Date(anoAtualExibido, mesAtualExibido, 1).getDay();
     const totalDiasMes = new Date(anoAtualExibido, mesAtualExibido + 1, 0).getDate();
     const totalDiasMesAnterior = new Date(anoAtualExibido, mesAtualExibido, 0).getDate();
     
-    // 1. Desenha os dias do mês anterior que aparecem apagados no início
+    // 1. Dias do mês anterior (apagados)
     for (let i = primeiroDiaIndex; i > 0; i--) {
         const div = document.createElement("div");
         div.className = "calendar-day other-month";
@@ -755,24 +836,97 @@ function renderizarCalendario() {
         grid.appendChild(div);
     }
     
-    // 2. Desenha os dias do mês atual
+    // 2. Dias do mês atual
     for (let dia = 1; dia <= totalDiasMes; dia++) {
-        const div = document.createElement("div");
-        div.className = "calendar-day";
-        div.innerText = dia;
+        const wrapper = document.createElement("div");
+        wrapper.className = "calendar-day-wrapper";
         
-        // Se for o dia que está selecionado, ganha a cor Terracotta/Clay
+        const divDia = document.createElement("div");
+        divDia.className = "calendar-day";
+        divDia.innerText = dia;
+        
         if (dia === dataSelecionada.getDate() && mesAtualExibido === dataSelecionada.getMonth() && anoAtualExibido === dataSelecionada.getFullYear()) {
-            div.classList.add("selected");
+            divDia.classList.add("selected");
         }
         
-        // Quando clica no dia, chama a função para selecionar
-        div.onclick = () => selecionarData(dia);
-        grid.appendChild(div);
+        // --- LÓGICA DE DETECÇÃO DAS BOLINHAS ---
+        const stringDataDoDia = `${anoAtualExibido}-${String(mesAtualExibido + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
+        const tarefasDesseDia = Object.values(todasAsTarefasDoBanco).filter(t => t.dataTarget === stringDataDoDia);
+        
+        let htmlBolinhas = '<div class="calendar-dots">';
+        if (tarefasDesseDia.some(t => t.who === 'pedro')) htmlBolinhas += '<span class="dot pedro"></span>';
+        if (tarefasDesseDia.some(t => t.who === 'esposa')) htmlBolinhas += '<span class="dot nicole"></span>';
+        if (tarefasDesseDia.some(t => t.who === 'ambos')) htmlBolinhas += '<span class="dot os-dois"></span>';
+        htmlBolinhas += '</div>';
+        
+        wrapper.appendChild(divDia);
+        wrapper.insertAdjacentHTML('beforeend', htmlBolinhas);
+        
+        wrapper.onclick = () => selecionarData(dia);
+        grid.appendChild(wrapper);
     }
 }
 
-function mudarMes(direcao) {
+// Intercepta a leitura padrão do Firebase para atualizar o calendário em tempo real com as bolinhas
+onValue(ref(db, 'tarefas'), snap => {
+  todasAsTarefasDoBanco = snap.val() || {};
+  renderTarefas(todasAsTarefasDoBanco);
+  renderizarCalendario(); 
+  document.getElementById('loadingOverlay').style.display = 'none';
+});
+
+// Sobrescreve a função de renderizar a lista para FILTRAR apenas as tarefas do dia clicado
+function renderTarefas(data) {
+  const list = document.getElementById('tarefaList');
+  const empty = document.getElementById('tarefaEmpty');
+  const prog = document.getElementById('tarefaProgress');
+  list.innerHTML = '';
+  
+  const dataFiltroString = obterStringData(dataSelecionada);
+  
+  // Filtra as tarefas garantindo que batam com o dia selecionado
+  const items = Object.entries(data)
+    .map(([k,v]) => ({...v, key:k}))
+    .filter(x => x.dataTarget === dataFiltroString);
+    
+  if (!items.length) { empty.style.display='block'; prog.style.display='none'; return; }
+  empty.style.display = 'none'; prog.style.display = 'block';
+  
+  const done = items.filter(x => x.done).length;
+  document.getElementById('tarefaProgressLabel').textContent = `${done}/${items.length}`;
+  document.getElementById('tarefaProgressFill').style.width = `${(done/items.length)*100}%`;
+  
+  items.sort((a,b) => a.createdAt - b.createdAt).forEach(t => {
+    const div = document.createElement('div');
+    div.className = 'item' + (t.done ? ' done' : '');
+    div.innerHTML = `
+      <div class="item-check" onclick="toggleTarefa('${t.key}',${!t.done})">${t.done?'✓':''}</div>
+      <span class="item-text">${escHtml(t.text)}</span>
+      <span class="item-meta">${escHtml(getName(t.who))}</span>
+      <button class="item-delete" onclick="deleteTarefa('${t.key}')">×</button>`;
+    list.appendChild(div);
+  });
+}
+
+// Sobrescreve a inserção para carimbar o dia selecionado no registro do Firebase
+window.addTarefa = function() {
+  const txt = document.getElementById('tarefaInput').value.trim();
+  if (!txt) return;
+  const who = document.getElementById('tarefaWho').value;
+  const dataTarget = obterStringData(dataSelecionada); // Carimba a data ativa
+  
+  setSyncing();
+  push(ref(db, 'tarefas'), { 
+    text: txt, 
+    who, 
+    done: false, 
+    dataTarget: dataTarget, 
+    createdAt: Date.now() 
+  }).then(setSynced).catch(setOffline);
+  document.getElementById('tarefaInput').value = '';
+};
+
+window.mudarMes = function(direcao) {
     mesAtualExibido += direcao;
     if (mesAtualExibido > 11) {
         mesAtualExibido = 0;
@@ -784,13 +938,11 @@ function mudarMes(direcao) {
     renderizarCalendario();
 }
 
-function selecionarData(dia) {
+window.selecionarData = function(dia) {
     dataSelecionada = new Date(anoAtualExibido, mesAtualExibido, dia);
-    
     const hoje = new Date();
     const label = document.getElementById("selected-date-label");
     
-    // Muda o título embaixo do calendário conforme o dia clicado
     if (dataSelecionada.toDateString() === hoje.toDateString()) {
         label.innerText = "Tarefas de Hoje";
     } else {
@@ -798,29 +950,13 @@ function selecionarData(dia) {
         label.innerText = `Tarefas de ${dataFormatada}`;
     }
     
-    renderizarCalendario(); // Recarrega o calendário para mudar a bolinha de dia selecionado
-    
-    // Avisa a função do Firebase para atualizar a lista (vamos ajustar isso a seguir)
-    if (typeof mostrarTarefas === 'function') {
-        mostrarTarefas(); 
-    }
+    renderTarefas(todasAsTarefasDoBanco); // Recarrega a lista aplicando o filtro do dia clicado
+    renderizarCalendario(); // Redesenha para atualizar a cor de seleção do círculo
 }
 
-// Quando a página terminar de carregar, desenha o calendário pela primeira vez
 document.addEventListener("DOMContentLoaded", () => {
     renderizarCalendario();
 });
-
-</script>
-
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./service-worker.js')
-        .then(() => console.log('Service Worker registrado ✓'))
-        .catch(err => console.log('SW erro:', err));
-    });
-  }
 </script>
 </body>
 </html>
